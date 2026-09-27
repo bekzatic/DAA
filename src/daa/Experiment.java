@@ -53,8 +53,8 @@ public final class Experiment {
     public static Experiment full() {
         return new Experiment(
                 new int[]{1_000, 5_000, 10_000, 50_000, 100_000, 500_000, 1_000_000},
-                new int[]{500, 1_000, 2_000, 5_000, 10_000},
-                5);
+                new int[]{500, 1_000, 2_000, 5_000, 10_000, 20_000},
+                7);
     }
 
     public static Experiment quick() {
@@ -115,7 +115,9 @@ public final class Experiment {
         }
         for (int n : bruteForceSizes) {
             Point[] pts = generatePoints(InputType.RANDOM, n, new Random(SEED + n));
-            rows.add(measureClosest(pts, InputType.RANDOM));
+            Row dc = measureClosest(pts, InputType.RANDOM);
+            rows.add(new Row("ClosestPairDC", dc.type(), dc.n(), dc.timeMs(), dc.maxDepth(),
+                    dc.comparisons(), dc.swaps(), dc.allocations(), dc.recursiveCalls()));
             rows.add(measureBruteForce(pts));
         }
         return rows;
@@ -123,13 +125,16 @@ public final class Experiment {
 
     private void warmUp() {
         Random rnd = new Random(7);
-        for (int r = 0; r < 20; r++) {
-            int[] a = generateArray(InputType.RANDOM, 20_000, rnd);
+        // Enough iterations for the C2 JIT compiler to optimise every hot method
+        // (otherwise the first, small sizes would be measured in the interpreter).
+        for (int r = 0; r < 60; r++) {
+            int[] a = generateArray(InputType.values()[r % 4], 50_000, rnd);
             new MergeSorter().sort(a.clone());
             new QuickSorter().sort(a.clone());
             new DeterministicSelector().select(a.clone(), a.length / 2);
             Arrays.sort(a.clone());
-            new ClosestPairSolver().solve(generatePoints(InputType.RANDOM, 5_000, rnd));
+            new ClosestPairSolver().solve(generatePoints(InputType.values()[r % 2 == 0 ? 0 : 3], 20_000, rnd));
+            ClosestPairSolver.bruteForce(generatePoints(InputType.RANDOM, 1_000, rnd));
         }
     }
 
@@ -140,6 +145,7 @@ public final class Experiment {
             int[] a = base.clone();
             m = new Metrics();
             MergeSorter s = new MergeSorter(m);
+            settle();
             long t0 = System.nanoTime();
             s.sort(a);
             times[r] = (System.nanoTime() - t0) / 1e6;
@@ -155,6 +161,7 @@ public final class Experiment {
             int[] a = base.clone();
             m = new Metrics();
             QuickSorter s = new QuickSorter(m, new Random(SEED + r));
+            settle();
             long t0 = System.nanoTime();
             s.sort(a);
             times[r] = (System.nanoTime() - t0) / 1e6;
@@ -169,6 +176,7 @@ public final class Experiment {
         double[] times = new double[reps];
         for (int r = 0; r < reps; r++) {
             int[] a = base.clone();
+            settle();
             long t0 = System.nanoTime();
             Arrays.sort(a);
             times[r] = (System.nanoTime() - t0) / 1e6;
@@ -183,6 +191,7 @@ public final class Experiment {
             int[] a = base.clone();
             m = new Metrics();
             DeterministicSelector s = new DeterministicSelector(m);
+            settle();
             long t0 = System.nanoTime();
             s.select(a, a.length / 2);
             times[r] = (System.nanoTime() - t0) / 1e6;
@@ -196,6 +205,7 @@ public final class Experiment {
         for (int r = 0; r < reps; r++) {
             m = new Metrics();
             ClosestPairSolver s = new ClosestPairSolver(m);
+            settle();
             long t0 = System.nanoTime();
             s.solve(pts);
             times[r] = (System.nanoTime() - t0) / 1e6;
@@ -207,6 +217,7 @@ public final class Experiment {
         int r2 = Math.max(1, reps / 2);
         double[] times = new double[r2];
         for (int r = 0; r < r2; r++) {
+            settle();
             long t0 = System.nanoTime();
             ClosestPairSolver.bruteForce(pts);
             times[r] = (System.nanoTime() - t0) / 1e6;
@@ -214,6 +225,11 @@ public final class Experiment {
         long n = pts.length;
         return new Row("ClosestPairBrute", InputType.RANDOM, pts.length, median(times),
                 0, n * (n - 1) / 2, 0, 0, 0);
+    }
+
+    /** Asks for a GC outside the timed region so a collection is less likely inside it. */
+    private static void settle() {
+        System.gc();
     }
 
     private static Row row(String name, InputType t, int n, double[] times, Metrics m) {
