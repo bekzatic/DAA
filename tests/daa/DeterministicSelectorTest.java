@@ -1,6 +1,7 @@
 package daa;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
@@ -67,5 +68,15 @@ class DeterministicSelectorTest {
             maxRatio = Math.max(maxRatio, (double) m.comparisons() / n);
         }
         assertTrue(maxRatio < 40, "comparisons/n = " + maxRatio);
+    }
+
+    @Test
+    @DisplayName("invalid k / empty array throw IllegalArgumentException")
+    void invalidArguments() {
+        DeterministicSelector s = new DeterministicSelector();
+        assertThrows(IllegalArgumentException.class, () -> s.select(new int[0], 0));
+        assertThrows(IllegalArgumentException.class, () -> s.select(null, 0));
+        assertThrows(IllegalArgumentException.class, () -> s.select(new int[]{1, 2}, 2));
+        assertThrows(IllegalArgumentException.class, () -> s.select(new int[]{1, 2}, -1));
     }
 }

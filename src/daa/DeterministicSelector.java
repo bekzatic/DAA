@@ -35,8 +35,16 @@ public final class DeterministicSelector {
 
     /**
      * Returns the k-th smallest element (0-based) of {@code a}. Permutes {@code a}.
+     *
+     * @throws IllegalArgumentException if {@code a} is null/empty or k is out of range
      */
     public int select(int[] a, int k) {
+        if (a == null || a.length == 0) {
+            throw new IllegalArgumentException("array must be non-empty");
+        }
+        if (k < 0 || k >= a.length) {
+            throw new IllegalArgumentException("k=" + k + " out of range [0, " + (a.length - 1) + "]");
+        }
         return select(a, 0, a.length - 1, k);
     }
 

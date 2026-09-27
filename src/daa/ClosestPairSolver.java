@@ -44,6 +44,14 @@ public final class ClosestPairSolver {
 
     /** Divide-and-conquer Θ(n log n). The input array is not modified. */
     public Result solve(Point[] points) {
+        if (points == null || points.length < 2) {
+            throw new IllegalArgumentException("need at least two points");
+        }
+        for (Point p : points) {
+            if (p == null) {
+                throw new IllegalArgumentException("points must not contain null");
+            }
+        }
         Point[] pts = points.clone();
         metrics.addAllocation();
         Arrays.sort(pts, BY_X);
@@ -141,6 +149,9 @@ public final class ClosestPairSolver {
 
     /** O(n²) reference implementation used for testing and comparison. */
     public static Result bruteForce(Point[] points) {
+        if (points == null || points.length < 2) {
+            throw new IllegalArgumentException("need at least two points");
+        }
         double best = Double.POSITIVE_INFINITY;
         Point bp = null;
         Point bq = null;

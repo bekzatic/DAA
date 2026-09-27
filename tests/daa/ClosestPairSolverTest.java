@@ -1,6 +1,7 @@
 package daa;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Random;
@@ -70,5 +71,16 @@ class ClosestPairSolverTest {
         ClosestPairSolver.Result r = new ClosestPairSolver(m).solve(pts);
         assertTrue(r.distance() >= 0);
         assertTrue(m.maxDepth() <= 20, "depth=" + m.maxDepth());
+    }
+
+    @Test
+    @DisplayName("fewer than two points / null throw IllegalArgumentException")
+    void invalidArguments() {
+        ClosestPairSolver s = new ClosestPairSolver();
+        assertThrows(IllegalArgumentException.class, () -> s.solve(new Point[0]));
+        assertThrows(IllegalArgumentException.class, () -> s.solve(new Point[]{new Point(1, 1)}));
+        assertThrows(IllegalArgumentException.class, () -> s.solve(null));
+        assertThrows(IllegalArgumentException.class,
+                () -> s.solve(new Point[]{new Point(1, 1), null}));
     }
 }
